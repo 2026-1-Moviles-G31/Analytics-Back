@@ -1,0 +1,26 @@
+# =========================
+# Environments and Secrets
+# =========================
+.venv
+.env
+nose-ac2dd-5c6eb6a24f23.json
+
+# =========================
+# Python files
+# =========================
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# =========================
+# Local Databases
+# =========================
+analytics.db
+
+# =========================
+# IDE and editor files
+# =========================
+.idea/
+.vscode/
+.DS_Store
