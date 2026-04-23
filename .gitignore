@@ -12,6 +12,7 @@ nose-ac2dd-*.json
 *.pyo
 *.pyd
 __pycache__/
+routes/__pycache__/
 
 # =========================
 # Local Databases
