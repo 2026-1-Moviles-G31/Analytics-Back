@@ -1,0 +1,27 @@
+# =========================
+# Environments and Secrets
+# =========================
+.venv
+.env
+nose-ac2dd-*.json
+
+# =========================
+# Python files
+# =========================
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+routes/__pycache__/
+
+# =========================
+# Local Databases
+# =========================
+analytics.db
+
+# =========================
+# IDE and editor files
+# =========================
+.idea/
+.vscode/
+.DS_Store
