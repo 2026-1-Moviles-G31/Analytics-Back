@@ -15,11 +15,6 @@ __pycache__/
 routes/__pycache__/
 
 # =========================
-# Local Databases
-# =========================
-analytics.db
-
-# =========================
 # IDE and editor files
 # =========================
 .idea/
