@@ -3,7 +3,7 @@
 # =========================
 .venv
 .env
-nose-ac2dd-5c6eb6a24f23.json
+nose-ac2dd-*.json
 
 # =========================
 # Python files

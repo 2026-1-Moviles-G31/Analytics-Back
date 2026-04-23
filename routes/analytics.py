@@ -71,37 +71,30 @@ def get_top_crashes():
         # SQL Query
         query = """
             SELECT
-                issue_title AS crash_location,
-                issue_subtitle AS error_reason,
-                COUNT(*) AS crash_count
+                JSON_VALUE(data, '$.screen_name') AS screen_name,
+                JSON_VALUE(data, '$.error_type') AS error_type,
+                COUNT(*) AS count
             FROM
-                `nose-ac2dd.firebase_crashlytics.com_example_tutoring_ANDROID_app_crash_issue_details`
+                `nose-ac2dd.app_analytics.crashes_raw_raw_changelog`
             WHERE
-                event_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+                operation = 'CREATE'
+                AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
             GROUP BY
-                crash_location, error_reason
+                1, 2
             ORDER BY
-                crash_count DESC
+                count DESC
             LIMIT 10
         """
 
         query_job = client.query(query)
-        results = query_job.result()
-
-        # Mapping the results to a json list
-        top_crashes = []
-        for row in results:
-            top_crashes.append(
-                {
-                    "location": row.crash_location,
-                    "reason": row.error_reason,
-                    "count": row.crash_count,
-                }
-            )
+        top_crashes = [
+            {
+                "location": row.screen_name,
+                "reason": row.error_type,
+                "count": row.count,
+            }
+            for row in query_job.result()
+        ]
         return {"status": "success", "data": top_crashes}
-    except GoogleAPIError as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error connecting to BigQuery: {str(e)}"
-        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
