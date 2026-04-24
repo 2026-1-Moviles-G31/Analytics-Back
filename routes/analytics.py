@@ -55,18 +55,9 @@ def get_events(db: Session = Depends(get_db)):
 # BQ Top 10 crashes
 @router.get("/api/kotlin/top-crashes")
 def get_top_crashes():
-
-    # Read credentials from environment variables
-    key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-
-    if not key_path:
-        raise HTTPException(
-            status_code=500, detail="GOOGLE_APPLICATION_CREDENTIALS not set"
-        )
-
     try:
         # Initialize BigQuery client
-        client = bigquery.Client.from_service_account_json(key_path)
+        client = bigquery.Client()
 
         # SQL Query
         query = """
@@ -96,5 +87,43 @@ def get_top_crashes():
             for row in query_job.result()
         ]
         return {"status": "success", "data": top_crashes}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# BQ Feature Time Spent
+@router.get("/api/kotlin/feature-time-spent")
+def get_feature_time_spent():
+    try:
+        # Initialize BigQuery client
+        client = bigquery.Client()
+
+        # SQL Query
+        query = """
+            SELECT
+                JSON_VALUE(data, '$.feature_name') AS feature,
+                ROUND(SUM(CAST(JSON_VALUE(data, '$.duration_ms') AS FLOAT64)) / 60000, 1) AS minutes
+            FROM
+                `nose-ac2dd.app_analytics.feature_usage_raw_changelog`
+            WHERE
+                operation = 'CREATE'
+                -- FILTRO CLAVE: Solo traer lo que tenga nombre
+                AND JSON_VALUE(data, '$.feature_name') IS NOT NULL
+                AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
+            GROUP BY 1
+            ORDER BY minutes DESC
+            LIMIT 10
+        """
+
+        query_job = client.query(query)
+        top_features = [
+            {
+                "feature": row.feature,
+                "minutes": row.minutes,
+            }
+            for row in query_job.result()
+            if row.feature is not None
+        ]
+        return {"status": "success", "data": top_features}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
