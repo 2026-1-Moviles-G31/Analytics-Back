@@ -9,6 +9,12 @@ services:
         fromDatabase:
           name: analytics-db
           property: connectionString
+      - key: BIGQUERY_PROJECT_ID
+        sync: false
+      - key: BIGQUERY_DATASET
+        sync: false
+      - key: BIGQUERY_TUTOR_EVENTS_TABLE
+        sync: false
 
 databases:
   - name: analytics-db
