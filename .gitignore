@@ -4,6 +4,7 @@
 .venv
 .env
 nose-ac2dd-*.json
+firebase-service-account.json
 
 # =========================
 # Python files

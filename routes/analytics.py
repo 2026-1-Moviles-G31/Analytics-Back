@@ -10,6 +10,10 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Event
 
+import firebase_admin
+from firebase_admin import credentials, firestore
+import os
+
 router = APIRouter()
 
 
@@ -125,5 +129,67 @@ def get_feature_time_spent():
             if row.feature is not None
         ]
         return {"status": "success", "data": top_features}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SERVICE_ACCOUNT_PATH = os.path.join(BASE_DIR, "firebase-service-account.json")
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
+    firebase_admin.initialize_app(cred)
+
+def get_firestore_db():
+    yield firestore.client()
+
+@router.get("/api/flutter/booking-connectivity-percentage")
+def get_booking_connectivity_percentage(db=Depends(get_firestore_db)):
+    try:
+        docs = (
+            db.collection("analytics_events")
+            .where("type", "==", "booking_attempt")
+            .stream()
+        )
+
+        total_attempts = 0
+        completed_immediately = 0
+        saved_pending = 0
+
+        for doc in docs:
+            data = doc.to_dict()
+            event = data.get("event")
+
+            if event not in [
+                "booking_completed_immediately",
+                "booking_saved_pending_poor_connectivity",
+            ]:
+                continue
+
+            total_attempts += 1
+
+            if event == "booking_completed_immediately":
+                completed_immediately += 1
+            elif event == "booking_saved_pending_poor_connectivity":
+                saved_pending += 1
+
+        return {
+            "status": "success",
+            "data": {
+                "total_attempts": total_attempts,
+                "completed_immediately": completed_immediately,
+                "saved_pending": saved_pending,
+                "completed_immediately_percentage": (
+                    round((completed_immediately / total_attempts) * 100, 2)
+                    if total_attempts > 0
+                    else 0
+                ),
+                "saved_pending_percentage": (
+                    round((saved_pending / total_attempts) * 100, 2)
+                    if total_attempts > 0
+                    else 0
+                ),
+            },
+        }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
