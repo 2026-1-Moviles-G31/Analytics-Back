@@ -1,5 +1,7 @@
 import os
+import json
 from datetime import date
+from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -24,8 +26,47 @@ def _get_required_env(name: str) -> str:
     return value
 
 
+def _get_project_id_from_credentials_file() -> Optional[str]:
+    credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if not credentials_path:
+        return None
+
+    path = Path(credentials_path)
+    if not path.is_absolute():
+        path = Path.cwd() / path
+
+    if not path.exists():
+        return None
+
+    try:
+        with path.open("r", encoding="utf-8") as credentials_file:
+            payload = json.load(credentials_file)
+        return payload.get("project_id")
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _get_bigquery_project_id() -> str:
+    project = (
+        os.environ.get("BIGQUERY_PROJECT_ID")
+        or os.environ.get("GOOGLE_CLOUD_PROJECT")
+        or os.environ.get("GCLOUD_PROJECT")
+        or _get_project_id_from_credentials_file()
+    )
+    if not project:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Missing BigQuery project configuration. Set BIGQUERY_PROJECT_ID, "
+                "GOOGLE_CLOUD_PROJECT, or GOOGLE_APPLICATION_CREDENTIALS with a "
+                "service account JSON that includes project_id."
+            ),
+        )
+    return project
+
+
 def _get_tutor_conversion_table_ref() -> str:
-    project = _get_required_env("BIGQUERY_PROJECT_ID")
+    project = _get_bigquery_project_id()
     dataset = _get_required_env("BIGQUERY_DATASET")
     table = _get_required_env("BIGQUERY_TUTOR_EVENTS_TABLE")
     return f"`{project}.{dataset}.{table}`"
@@ -159,7 +200,7 @@ def get_tutor_conversion(
         )
 
     table_ref = _get_tutor_conversion_table_ref()
-    project = os.environ.get("BIGQUERY_PROJECT_ID")
+    project = _get_bigquery_project_id()
 
     query = f"""
         WITH filtered_events AS (
