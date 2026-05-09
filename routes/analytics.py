@@ -1,4 +1,3 @@
-import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,10 +8,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Event
-
-import firebase_admin
-from firebase_admin import credentials, firestore
-import os
+from services.firestore_sessions import get_firestore_client
 
 router = APIRouter()
 
@@ -132,15 +128,8 @@ def get_feature_time_spent():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SERVICE_ACCOUNT_PATH = os.path.join(BASE_DIR, "firebase-service-account.json")
-
-if not firebase_admin._apps:
-    cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
-    firebase_admin.initialize_app(cred)
-
 def get_firestore_db():
-    yield firestore.client()
+    return get_firestore_client()
 
 @router.get("/api/flutter/booking-connectivity-percentage")
 def get_booking_connectivity_percentage(db=Depends(get_firestore_db)):

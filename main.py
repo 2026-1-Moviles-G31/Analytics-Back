@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import Base, engine
 from routes.analytics import router
+from routes.sessions import router as sessions_router
 
 load_dotenv()
 
@@ -19,3 +20,4 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(sessions_router)
